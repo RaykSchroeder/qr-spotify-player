@@ -1,5 +1,5 @@
 // types/react-qr-reader.d.ts
-declare module 'react-qr-reader' {
+declare module 'react-qr-reade' {
   import * as React from 'react';
 
   export interface QrReaderProps {
