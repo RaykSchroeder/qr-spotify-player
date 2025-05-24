@@ -16,8 +16,31 @@ export default function Player() {
     setToken(accessToken);
   }, []);
 
+  const checkActiveDevice = async (): Promise<boolean> => {
+    if (!token) return false;
+
+    try {
+      const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      const activeDevice = data.devices.find((device: any) => device.is_active);
+      return !!activeDevice;
+    } catch {
+      setError('Fehler beim Abrufen der Geräte.');
+      return false;
+    }
+  };
+
   const playTrack = async (uri: string) => {
     if (!token) return;
+
+    const hasDevice = await checkActiveDevice();
+    if (!hasDevice) {
+      setError('Kein aktives Gerät gefunden. Bitte Spotify auf einem Gerät öffnen.');
+      return;
+    }
+
     try {
       const res = await fetch('https://api.spotify.com/v1/me/player/play', {
         method: 'PUT',
@@ -25,7 +48,10 @@ export default function Player() {
         body: JSON.stringify({ uris: [uri] }),
       });
       if (!res.ok) setError('Konnte Song nicht abspielen.');
-      else setCurrentUri(uri);
+      else {
+        setError('');
+        setCurrentUri(uri);
+      }
     } catch {
       setError('Netzwerkfehler.');
     }
@@ -58,7 +84,7 @@ export default function Player() {
         });
       } else {
         await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
-          method: endpoint === 'pause' ? 'PUT' : 'PUT',
+          method: 'PUT',
           headers: { Authorization: `Bearer ${token}` },
         });
       }
