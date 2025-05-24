@@ -1,9 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import QrScanner from 'qr-scanner';
+import QrScanner, { ScanResult } from 'qr-scanner';
 
-QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js'; // Arbeiter-Script laden (muss in public/ liegen)
+// Stelle sicher, dass die Worker-Datei in /public liegt (also public/qr-scanner-worker.min.js)
+QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
 
-export default function QrScannerComponent({ onScan }: { onScan: (result: string) => void }) {
+type QrScannerComponentProps = {
+  onScan: (result: string) => void;
+};
+
+export default function QrScannerComponent({ onScan }: QrScannerComponentProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [scanner, setScanner] = useState<QrScanner | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -13,13 +18,13 @@ export default function QrScannerComponent({ onScan }: { onScan: (result: string
 
     const qrScanner = new QrScanner(
       videoRef.current,
-      (result) => {
-        onScan(result);
+      (result: ScanResult) => {
+        onScan(result.data); // Fix: Nutze das data-Property aus ScanResult
         qrScanner.stop(); // Scanner stoppen, sobald Ergebnis da ist
       },
       {
         onDecodeError: (err) => {
-          // Fehler ignorieren oder anzeigen
+          // Optional: Fehler anzeigen oder ignorieren
           // console.log('Decode error:', err);
         },
         highlightScanRegion: true,
