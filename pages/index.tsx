@@ -21,6 +21,7 @@ export default function Home() {
 
   useEffect(() => {
     async function setupAuth() {
+      // Dynamische Redirect URI
       const redirectUri = `${window.location.origin}/callback`;
 
       const verifier = generateCodeVerifier();
@@ -35,9 +36,6 @@ export default function Home() {
       )}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge_method=S256&code_challenge=${challenge}&state=${state}`;
 
       setAuthUrl(url);
-
-      // Für Tests: setIsAuthenticated(true);
-      // Später echten Auth-Check hier einbauen
     }
 
     setupAuth();
@@ -47,10 +45,7 @@ export default function Home() {
     if (isAuthenticated && videoRef.current) {
       QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js';
 
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        (result) => setQrResult(result)
-      );
+      qrScannerRef.current = new QrScanner(videoRef.current, (result) => setQrResult(result));
       qrScannerRef.current.start();
 
       return () => {
