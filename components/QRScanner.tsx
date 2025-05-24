@@ -1,32 +1,33 @@
-import React, { useEffect, useRef, useState } from 'react';
+// components/QRScanner.tsx
+import React, { useEffect, useRef } from 'react';
 import QrScanner from 'qr-scanner';
 
-// Setze den Worker-Pfad einmalig (z.B. am Anfang der Datei)
 QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js';
 
-export default function Home() {
+interface QRScannerProps {
+  onScan: (result: string) => void;
+}
+
+export default function QRScanner({ onScan }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [qrResult, setQrResult] = useState<string | null>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
+  const scannerRef = useRef<QrScanner | null>(null);
 
   useEffect(() => {
-    if (!videoRef.current) return;
+    if (videoRef.current) {
+      scannerRef.current = new QrScanner(
+        videoRef.current,
+        (result) => {
+          onScan(result);
+        }
+      );
+      scannerRef.current.start();
 
-    qrScannerRef.current = new QrScanner(
-      videoRef.current,
-      (result) => setQrResult(result) // result ist ein string
-    );
-    qrScannerRef.current.start();
+      return () => {
+        scannerRef.current?.stop();
+        scannerRef.current?.destroy();
+      };
+    }
+  }, [onScan]);
 
-    return () => {
-      qrScannerRef.current?.destroy();
-    };
-  }, []);
-
-  return (
-    <div>
-      <video ref={videoRef} style={{ width: '100%', maxWidth: 400 }} />
-      {qrResult && <p>Scan Ergebnis: {qrResult}</p>}
-    </div>
-  );
+  return <video ref={videoRef} style={{ width: '300px', margin: 'auto', display: 'block' }} />;
 }
