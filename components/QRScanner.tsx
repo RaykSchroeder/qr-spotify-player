@@ -1,74 +1,45 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
+import QrScanner from 'qr-scanner';
 
-type QRScannerProps = {
-  onScan: (data: string) => void;
-};
+QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js'; // Arbeiter-Script laden (muss in public/ liegen)
 
-export default function QRScanner({ onScan }: QRScannerProps) {
+export default function QrScannerComponent({ onScan }: { onScan: (result: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [scanner, setScanner] = useState<QrScanner | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const barcodeDetectorRef = useRef<BarcodeDetector | null>(null);
 
   useEffect(() => {
-    async function startScanner() {
-      if (!("BarcodeDetector" in window)) {
-        setError("BarcodeDetector API wird von diesem Browser nicht unterstützt.");
-        return;
+    if (!videoRef.current) return;
+
+    const qrScanner = new QrScanner(
+      videoRef.current,
+      (result) => {
+        onScan(result);
+        qrScanner.stop(); // Scanner stoppen, sobald Ergebnis da ist
+      },
+      {
+        onDecodeError: (err) => {
+          // Fehler ignorieren oder anzeigen
+          // console.log('Decode error:', err);
+        },
+        highlightScanRegion: true,
+        maxScansPerSecond: 5,
       }
+    );
 
-      try {
-        barcodeDetectorRef.current = new BarcodeDetector({ formats: ["qr_code"] });
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    qrScanner.start().catch((e) => setError('Kamera Zugriff verweigert oder nicht verfügbar'));
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          setScanning(true);
-          scanFrame();
-        }
-      } catch (err) {
-        setError("Kamera konnte nicht geöffnet werden: " + (err as Error).message);
-      }
-    }
-
-    async function scanFrame() {
-      if (!videoRef.current || !barcodeDetectorRef.current || !scanning) return;
-
-      try {
-        const barcodes = await barcodeDetectorRef.current.detect(videoRef.current);
-        if (barcodes.length > 0) {
-          onScan(barcodes[0].rawValue);
-          setScanning(false);
-          // Kamera stoppen nach Scan
-          if (videoRef.current.srcObject) {
-            const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-            tracks.forEach(track => track.stop());
-          }
-        } else {
-          requestAnimationFrame(scanFrame);
-        }
-      } catch (err) {
-        setError("Fehler beim Scannen: " + (err as Error).message);
-      }
-    }
-
-    startScanner();
+    setScanner(qrScanner);
 
     return () => {
-      setScanning(false);
-      if (videoRef.current?.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
-      }
+      qrScanner.destroy();
     };
-  }, [onScan, scanning]);
+  }, [onScan]);
 
   return (
     <div>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <video ref={videoRef} style={{ width: "100%", maxHeight: "400px" }} muted playsInline />
-      {!error && !scanning && <p>Scannen abgeschlossen oder pausiert.</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <video ref={videoRef} style={{ width: '100%', maxWidth: '400px' }} />
     </div>
   );
 }
