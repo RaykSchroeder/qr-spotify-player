@@ -13,7 +13,7 @@ export default function Home() {
 
     qrScannerRef.current = new QrScanner(
       videoRef.current,
-      (result) => setQrResult(result.data)
+      (result) => setQrResult(result) // <-- hier korrigiert
     );
     qrScannerRef.current.start();
 
