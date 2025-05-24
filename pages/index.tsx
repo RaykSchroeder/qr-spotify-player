@@ -14,7 +14,7 @@ const scopes = [
 
 export default function Home() {
   const [authUrl, setAuthUrl] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Hier musst du deinen Auth-Check implementieren
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [qrResult, setQrResult] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
@@ -35,6 +35,11 @@ export default function Home() {
       )}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge_method=S256&code_challenge=${challenge}&state=${state}`;
 
       setAuthUrl(url);
+
+      // **Zum Testen hier:**
+      // setIsAuthenticated(true);
+
+      // Später hier echten Auth-Check implementieren
     }
 
     setupAuth();
@@ -42,7 +47,6 @@ export default function Home() {
 
   useEffect(() => {
     if (isAuthenticated && videoRef.current) {
-      // QR-Scanner mit Worker vom CDN laden
       qrScannerRef.current = new QrScanner(
         videoRef.current,
         (result) => setQrResult(result),
