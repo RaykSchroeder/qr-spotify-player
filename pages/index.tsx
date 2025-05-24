@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
 
 const clientId = '349608c2c10e4aaf84adc17e8d44e520';
-const redirectUri = 'https://v0-spotify-qr-code-script-2o.vercel.app/callback';
+
 const scopes = [
   'user-read-private',
   'user-read-email',
@@ -16,6 +16,9 @@ export default function Home() {
 
   useEffect(() => {
     const setupAuth = async () => {
+      // Dynamisch Redirect URI aus dem aktuellen Host erstellen
+      const redirectUri = `${window.location.origin}/callback`;
+
       const verifier = generateCodeVerifier();
       const challenge = await generateCodeChallenge(verifier);
       const state = Math.random().toString(36).substring(2);
