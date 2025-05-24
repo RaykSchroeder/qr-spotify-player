@@ -1,17 +1,10 @@
 // pages/player.tsx
 import { useEffect, useState } from 'react';
-
-type CurrentlyPlaying = {
-  item: {
-    name: string;
-    artists: { name: string }[];
-    album: { images: { url: string }[] };
-  } | null;
-  is_playing: boolean;
-};
+import QRScanner from '@/components/QRScanner';
 
 export default function Player() {
-  const [playing, setPlaying] = useState<CurrentlyPlaying | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [currentUri, setCurrentUri] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -20,44 +13,79 @@ export default function Player() {
       setError('Kein Access Token gefunden. Bitte zuerst einloggen.');
       return;
     }
-
-    const fetchPlaying = async () => {
-      try {
-        const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-
-        if (res.status === 204) {
-          setPlaying(null);
-          return;
-        }
-        if (!res.ok) {
-          setError('Fehler beim Laden der aktuellen Wiedergabe.');
-          return;
-        }
-
-        const data = await res.json();
-        setPlaying(data);
-      } catch {
-        setError('Netzwerkfehler.');
-      }
-    };
-
-    fetchPlaying();
-    const interval = setInterval(fetchPlaying, 10000);
-    return () => clearInterval(interval);
+    setToken(accessToken);
   }, []);
 
-  if (error) return <p style={{ textAlign: 'center', color: 'red' }}>{error}</p>;
-  if (!playing) return <p style={{ textAlign: 'center' }}>Momentan wird nichts abgespielt.</p>;
+  const playTrack = async (uri: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch('https://api.spotify.com/v1/me/player/play', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uris: [uri] }),
+      });
+      if (!res.ok) setError('Konnte Song nicht abspielen.');
+      else setCurrentUri(uri);
+    } catch {
+      setError('Netzwerkfehler.');
+    }
+  };
+
+  const controlPlayer = async (action: string) => {
+    if (!token) return;
+    let endpoint = '';
+    let body: any = {};
+    if (action === 'pause') endpoint = 'pause';
+    else if (action === 'play') endpoint = 'play';
+    else if (action === 'seek_forward') endpoint = 'seek';
+    else if (action === 'seek_backward') endpoint = 'seek';
+
+    if (action === 'seek_forward') body = { position_ms: 10000 }; // +10s
+    if (action === 'seek_backward') body = { position_ms: -10000 }; // nicht erlaubt, wir müssen position holen
+
+    try {
+      if (endpoint === 'seek') {
+        // aktuelle Position holen
+        const posRes = await fetch('https://api.spotify.com/v1/me/player', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await posRes.json();
+        const currentPos = data.progress_ms || 0;
+        const newPos = action === 'seek_forward' ? currentPos + 10000 : Math.max(currentPos - 10000, 0);
+        await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${newPos}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+          method: endpoint === 'pause' ? 'PUT' : 'PUT',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch {
+      setError('Fehler beim Steuern des Players.');
+    }
+  };
 
   return (
     <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-      <h1>Jetzt läuft:</h1>
-      <img src={playing.item?.album.images[0]?.url} alt="Album Cover" style={{ width: 200, borderRadius: 8 }} />
-      <h2>{playing.item?.name}</h2>
-      <p>{playing.item?.artists.map((artist) => artist.name).join(', ')}</p>
-      <p>{playing.is_playing ? '🎵 Wiedergabe läuft' : '⏸️ Wiedergabe pausiert'}</p>
+      <h1>Spotify Player</h1>
+
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {!currentUri && <QRScanner onScan={(data) => playTrack(data)} />}
+
+      {currentUri && (
+        <>
+          <div style={{ marginTop: '1rem' }}>
+            <button onClick={() => controlPlayer('play')}>▶️ Play</button>
+            <button onClick={() => controlPlayer('pause')}>⏸️ Pause</button>
+            <button onClick={() => controlPlayer('seek_backward')}>⏪ 10s zurück</button>
+            <button onClick={() => controlPlayer('seek_forward')}>⏩ 10s vor</button>
+            <button onClick={() => setCurrentUri(null)}>🔄 Nächster Song (scannen)</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
