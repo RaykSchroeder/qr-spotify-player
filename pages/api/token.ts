@@ -2,8 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const clientId = '349608c2c10e4aaf84adc17e8d44e520';
-const redirectUri = 'https://qr-spotify-player.vercel.app/callback';
-
+const redirectUri = 'https://qr-spotify-player.vercel.app/callback'; // Deine Domain anpassen
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -26,9 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
     });
 
