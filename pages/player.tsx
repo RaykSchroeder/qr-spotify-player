@@ -1,4 +1,3 @@
-// pages/player.tsx
 import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 
@@ -12,13 +11,12 @@ type Device = {
 
 export default function Player() {
   const [token, setToken] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [currentUri, setCurrentUri] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  // Access Token laden
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) {
@@ -28,7 +26,7 @@ export default function Player() {
     setToken(accessToken);
   }, []);
 
-  // Benutzer-Info abrufen
+  // Benutzerinfos abrufen
   useEffect(() => {
     if (!token) return;
 
@@ -37,21 +35,21 @@ export default function Player() {
         const res = await fetch('https://api.spotify.com/v1/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
         if (!res.ok) {
-          setError('Fehler beim Abrufen der Benutzerinfo.');
+          setError('Fehler beim Abrufen der Benutzerinfos. Bitte überprüfe deinen Login.');
           return;
         }
+        const data = await res.json();
         setUserName(data.display_name || data.id);
       } catch {
-        setError('Fehler beim Abrufen der Benutzerinfo.');
+        setError('Netzwerkfehler beim Abrufen der Benutzerinfos.');
       }
     }
 
     fetchUser();
   }, [token]);
 
-  // Geräte auslesen und aktives Gerät setzen
+  // Geräte auslesen
   useEffect(() => {
     if (!token) return;
 
@@ -68,12 +66,11 @@ export default function Player() {
         }
 
         setDevices(data.devices || []);
-
         const active = data.devices.find((d: Device) => d.is_active);
         if (active) {
           setActiveDeviceId(active.id);
         } else if (data.devices.length > 0) {
-          // Optional: automatisch erstes Gerät aktivieren
+          // Wenn kein aktives Gerät, aktiviere das erste verfügbare
           await activateDevice(data.devices[0].id);
           setActiveDeviceId(data.devices[0].id);
         } else {
@@ -87,7 +84,6 @@ export default function Player() {
     fetchDevices();
   }, [token]);
 
-  // Gerät aktivieren
   async function activateDevice(deviceId: string) {
     if (!token) return;
 
@@ -102,7 +98,6 @@ export default function Player() {
     }
   }
 
-  // Track abspielen
   const playTrack = async (uri: string) => {
     if (!token) return;
     if (!activeDeviceId) {
@@ -126,17 +121,14 @@ export default function Player() {
     }
   };
 
-  // Player steuern: play, pause, seek_forward, seek_backward
   const controlPlayer = async (action: string) => {
-    if (!token) return;
-    if (!activeDeviceId) {
+    if (!token || !activeDeviceId) {
       setError('Kein aktives Gerät zum Steuern gefunden.');
       return;
     }
 
     try {
       if (action === 'seek_forward' || action === 'seek_backward') {
-        // Position holen
         const posRes = await fetch('https://api.spotify.com/v1/me/player', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -153,11 +145,8 @@ export default function Player() {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!seekRes.ok) {
-          setError('Fehler beim Suchen im Song.');
-        }
+        if (!seekRes.ok) setError('Fehler beim Suchen im Song.');
       } else {
-        // Play oder Pause
         const endpoint = action === 'play' ? 'play' : 'pause';
         const res = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}?device_id=${activeDeviceId}`, {
           method: 'PUT',
@@ -174,23 +163,31 @@ export default function Player() {
     <div style={{ textAlign: 'center', marginTop: '2rem' }}>
       <h1>Spotify Player</h1>
 
-      {userName && <p>Angemeldeter Benutzer: <strong>{userName}</strong></p>}
-
+      {userName && <p>Angemeldet als: <strong>{userName}</strong></p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {!currentUri && <QRScanner onScan={(data) => playTrack(data)} />}
 
       {currentUri && (
-        <>
-          <div style={{ marginTop: '1rem' }}>
-            <button onClick={() => controlPlayer('play')}>▶️ Play</button>
-            <button onClick={() => controlPlayer('pause')}>⏸️ Pause</button>
-            <button onClick={() => controlPlayer('seek_backward')}>⏪ 10s zurück</button>
-            <button onClick={() => controlPlayer('seek_forward')}>⏩ 10s vor</button>
-            <button onClick={() => setCurrentUri(null)}>🔄 Neuer Song (scannen)</button>
-          </div>
-        </>
+        <div style={{ marginTop: '1rem' }}>
+          <button onClick={() => controlPlayer('play')}>▶️ Play</button>
+          <button onClick={() => controlPlayer('pause')}>⏸️ Pause</button>
+          <button onClick={() => controlPlayer('seek_backward')}>⏪ 10s zurück</button>
+          <button onClick={() => controlPlayer('seek_forward')}>⏩ 10s vor</button>
+          <button onClick={() => setCurrentUri(null)}>🔄 Neuer Song (scannen)</button>
+        </div>
       )}
+
+      <div style={{ marginTop: '2rem' }}>
+        <h2>Verfügbare Geräte:</h2>
+        <ul>
+          {devices.map((device) => (
+            <li key={device.id}>
+              {device.name} {device.is_active && '(Aktiv)'}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
