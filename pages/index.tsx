@@ -1,10 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import QrScanner from 'qr-scanner';
+import React, { useEffect, useState } from 'react';
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
 
-
-const clientId = '349608c2c10e4aaf84adc17e8d44e520';
-
+const clientId = '349608c2c10e4aaf84adc17e8d44e520'; // Ersetze durch deinen Spotify Client ID
 const scopes = [
   'user-read-private',
   'user-read-email',
@@ -15,16 +12,10 @@ const scopes = [
 
 export default function Home() {
   const [authUrl, setAuthUrl] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [qrResult, setQrResult] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
 
   useEffect(() => {
     async function setupAuth() {
-      // Dynamische Redirect URI
       const redirectUri = `${window.location.origin}/callback`;
-
       const verifier = generateCodeVerifier();
       const challenge = await generateCodeChallenge(verifier);
       const state = Math.random().toString(36).substring(2);
@@ -42,44 +33,14 @@ export default function Home() {
     setupAuth();
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated && videoRef.current) {
-      QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js';
-
-      qrScannerRef.current = new QrScanner(videoRef.current, (result) => setQrResult(result));
-      qrScannerRef.current.start();
-
-      return () => {
-        qrScannerRef.current?.stop();
-        qrScannerRef.current?.destroy();
-      };
-    }
-  }, [isAuthenticated]);
-
-  if (!authUrl) return <p>Lade Login-Daten...</p>;
-
-  if (!isAuthenticated) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-        <h1>Spotify QR Scanner Player</h1>
-        <p>Bitte logge dich zuerst mit deinem Spotify-Account ein.</p>
+  return (
+    <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+      <h1>Spotify Auth Demo</h1>
+      <p>Logge dich mit deinem Spotify-Account ein:</p>
+      {authUrl && (
         <a href={authUrl}>
           <button>Mit Spotify einloggen</button>
         </a>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-      <h1>Spotify QR Scanner Player</h1>
-      <p>QR-Code scannen:</p>
-      <video ref={videoRef} style={{ width: '300px', margin: 'auto' }}></video>
-      {qrResult && (
-        <div style={{ marginTop: '1rem' }}>
-          <strong>Erkannter QR-Code:</strong> <br />
-          {qrResult}
-        </div>
       )}
     </div>
   );
