@@ -2,7 +2,8 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 const clientId = '349608c2c10e4aaf84adc17e8d44e520';
-const redirectUri = 'https://v0-spotify-qr-code-script-2o.vercel.app/callback';
+const redirectUri = 'https://qr-spotify-player.vercel.app/callback';
+
 
 export default function Callback() {
   const router = useRouter();
