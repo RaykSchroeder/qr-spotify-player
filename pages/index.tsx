@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { QrReader } from '@blackbox-vision/react-qr-reader';
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
 
 const clientId = '349608c2c10e4aaf84adc17e8d44e520';
@@ -13,6 +14,8 @@ const scopes = [
 
 export default function Home() {
   const [authUrl, setAuthUrl] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [qrResult, setQrResult] = useState<string | null>(null);
 
   useEffect(() => {
     async function setupAuth() {
@@ -33,17 +36,46 @@ export default function Home() {
     }
 
     setupAuth();
+
+    // Prüfe z.B. hier, ob du schon authentifiziert bist (Token in localStorage?)
+    // setIsAuthenticated(true);  // Beispiel, je nach deinem Auth-Flow
   }, []);
 
   if (!authUrl) return <p>Lade Login-Daten...</p>;
 
+  if (!isAuthenticated) {
+    return (
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <h1>Spotify QR Scanner Player</h1>
+        <p>Bitte logge dich zuerst mit deinem Spotify-Account ein.</p>
+        <a href={authUrl}>
+          <button>Mit Spotify einloggen</button>
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div style={{ textAlign: 'center', marginTop: '2rem' }}>
       <h1>Spotify QR Scanner Player</h1>
-      <p>Bitte logge dich zuerst mit deinem Spotify-Account ein.</p>
-      <a href={authUrl}>
-        <button>Mit Spotify einloggen</button>
-      </a>
+      <p>QR-Code scannen:</p>
+      <QrReader
+        onResult={(result, error) => {
+          if (!!result) {
+            setQrResult(result.getText());
+          }
+          if (!!error) {
+            console.error(error);
+          }
+        }}
+        style={{ width: '300px', margin: 'auto' }}
+      />
+      {qrResult && (
+        <div style={{ marginTop: '1rem' }}>
+          <strong>Erkannter QR-Code:</strong> <br />
+          {qrResult}
+        </div>
+      )}
     </div>
   );
 }
