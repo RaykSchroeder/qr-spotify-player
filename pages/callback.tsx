@@ -16,7 +16,7 @@ export default function Callback() {
         grant_type: 'authorization_code',
         code: String(code),
         redirect_uri: redirectUri,
-        client_id: 'DEINE_CLIENT_ID',
+        client_id: '349608c2c10e4aaf84adc17e8d44e520',
         code_verifier: verifier || '',
       });
 
