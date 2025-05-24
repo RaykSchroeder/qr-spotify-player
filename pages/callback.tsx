@@ -9,6 +9,8 @@ export default function Callback() {
   const [message, setMessage] = useState('Authentifiziere...');
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleAuth = async () => {
       const query = new URLSearchParams(window.location.search);
       const code = query.get('code');
@@ -47,10 +49,12 @@ export default function Callback() {
 
         if (data.access_token) {
           setMessage('Authentifizierung erfolgreich!');
-          // Hier kannst du Access Token speichern und weiterleiten
           localStorage.removeItem('auth_state');
           localStorage.removeItem('verifier');
-          // Beispiel: Weiterleitung auf Hauptseite
+
+          // Beispiel: Access Token speichern, Weiterleitung
+          localStorage.setItem('spotify_token', data.access_token);
+
           setTimeout(() => {
             router.push('/');
           }, 2000);
@@ -58,6 +62,7 @@ export default function Callback() {
           setMessage('Token-Austausch fehlgeschlagen.');
         }
       } catch (error) {
+        console.error('Fehler beim Token-Austausch:', error);
         setMessage('Fehler beim Authentifizieren.');
       }
     };
