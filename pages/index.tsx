@@ -1,3 +1,4 @@
+// pages/index.tsx
 import React, { useEffect, useState } from 'react';
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
 
@@ -16,7 +17,6 @@ export default function Home() {
 
   useEffect(() => {
     const setupAuth = async () => {
-      // Dynamisch Redirect URI aus dem aktuellen Host erstellen
       const redirectUri = `${window.location.origin}/callback`;
 
       const verifier = generateCodeVerifier();
