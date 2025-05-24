@@ -1,4 +1,3 @@
-// pages/index.tsx
 import React, { useEffect, useState } from 'react';
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
 
@@ -16,7 +15,7 @@ export default function Home() {
   const [authUrl, setAuthUrl] = useState('');
 
   useEffect(() => {
-    const setupAuth = async () => {
+    async function setupAuth() {
       const redirectUri = `${window.location.origin}/callback`;
 
       const verifier = generateCodeVerifier();
@@ -31,10 +30,12 @@ export default function Home() {
       )}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge_method=S256&code_challenge=${challenge}&state=${state}`;
 
       setAuthUrl(url);
-    };
+    }
 
     setupAuth();
   }, []);
+
+  if (!authUrl) return <p>Lade Login-Daten...</p>;
 
   return (
     <div style={{ textAlign: 'center', marginTop: '2rem' }}>
