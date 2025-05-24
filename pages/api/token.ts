@@ -2,7 +2,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const clientId = '349608c2c10e4aaf84adc17e8d44e520';
-const redirectUri = 'https://v0-spotify-qr-code-script-2o.vercel.app/callback';
+const redirectUri = 'https://qr-spotify-player.vercel.app/callback';
+
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
