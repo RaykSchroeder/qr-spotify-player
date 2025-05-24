@@ -36,10 +36,8 @@ export default function Home() {
 
       setAuthUrl(url);
 
-      // **Zum Testen hier:**
-      // setIsAuthenticated(true);
-
-      // Später hier echten Auth-Check implementieren
+      // Für Tests: setIsAuthenticated(true);
+      // Später echten Auth-Check hier einbauen
     }
 
     setupAuth();
@@ -47,10 +45,11 @@ export default function Home() {
 
   useEffect(() => {
     if (isAuthenticated && videoRef.current) {
+      QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js';
+
       qrScannerRef.current = new QrScanner(
         videoRef.current,
-        (result) => setQrResult(result),
-        { workerPath: 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js' }
+        (result) => setQrResult(result)
       );
       qrScannerRef.current.start();
 
