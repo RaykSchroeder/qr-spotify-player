@@ -155,7 +155,7 @@ export default function Player() {
 
       {currentUri && (
         <>
-          <p>Aktuelles Lied URI: {currentUri}</p>
+        
 
           <div style={{ marginTop: '1rem' }}>
             <button onClick={() => controlPlayer('play')}>▶️ Play</button>
