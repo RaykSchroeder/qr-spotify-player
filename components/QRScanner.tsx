@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
 
+// Setze den Worker-Pfad einmalig (z.B. am Anfang der Datei)
 QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.min.js';
 
 export default function Home() {
@@ -13,7 +14,7 @@ export default function Home() {
 
     qrScannerRef.current = new QrScanner(
       videoRef.current,
-      (result) => setQrResult(result) // <-- hier korrigiert
+      (result) => setQrResult(result) // result ist ein string
     );
     qrScannerRef.current.start();
 
