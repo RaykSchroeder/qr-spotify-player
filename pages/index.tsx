@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
 
-const clientId = '349608c2c10e4aaf84adc17e8d44e520';
+const clientId = '349608c2c10e4aaf84adc17e8d44e521';
 
 const scopes = [
   'user-read-private',
