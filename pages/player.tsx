@@ -12,11 +12,13 @@ type Device = {
 
 export default function Player() {
   const [token, setToken] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [currentUri, setCurrentUri] = useState<string | null>(null);
   const [error, setError] = useState('');
 
+  // Access Token laden
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) {
@@ -25,6 +27,29 @@ export default function Player() {
     }
     setToken(accessToken);
   }, []);
+
+  // Benutzer-Info abrufen
+  useEffect(() => {
+    if (!token) return;
+
+    async function fetchUser() {
+      try {
+        const res = await fetch('https://api.spotify.com/v1/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError('Fehler beim Abrufen der Benutzerinfo.');
+          return;
+        }
+        setUserName(data.display_name || data.id);
+      } catch {
+        setError('Fehler beim Abrufen der Benutzerinfo.');
+      }
+    }
+
+    fetchUser();
+  }, [token]);
 
   // Geräte auslesen und aktives Gerät setzen
   useEffect(() => {
@@ -48,7 +73,7 @@ export default function Player() {
         if (active) {
           setActiveDeviceId(active.id);
         } else if (data.devices.length > 0) {
-          // Wenn kein aktives Gerät, aktiviere das erste verfügbare
+          // Optional: automatisch erstes Gerät aktivieren
           await activateDevice(data.devices[0].id);
           setActiveDeviceId(data.devices[0].id);
         } else {
@@ -149,14 +174,14 @@ export default function Player() {
     <div style={{ textAlign: 'center', marginTop: '2rem' }}>
       <h1>Spotify Player</h1>
 
+      {userName && <p>Angemeldeter Benutzer: <strong>{userName}</strong></p>}
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {!currentUri && <QRScanner onScan={(data) => playTrack(data)} />}
 
       {currentUri && (
         <>
-        
-
           <div style={{ marginTop: '1rem' }}>
             <button onClick={() => controlPlayer('play')}>▶️ Play</button>
             <button onClick={() => controlPlayer('pause')}>⏸️ Pause</button>
@@ -166,17 +191,6 @@ export default function Player() {
           </div>
         </>
       )}
-
-      <div style={{ marginTop: '2rem' }}>
-        <h2>Verfügbare Geräte:</h2>
-        <ul>
-          {devices.map((device) => (
-            <li key={device.id}>
-              {device.name} {device.is_active && '(Aktiv)'}
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 }
