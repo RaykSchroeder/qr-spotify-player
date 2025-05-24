@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
-import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
+import { generateCodeChallenge, generateCodeVerifier } from '/utils/pkce';
 
 
 const clientId = '349608c2c10e4aaf84adc17e8d44e520';
