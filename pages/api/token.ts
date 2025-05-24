@@ -1,8 +1,6 @@
-// pages/api/token.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const clientId = '349608c2c10e4aaf84adc17e8d44e520';
-const redirectUri = 'https://qr-spotify-player.vercel.app/callback'; // Deine Domain anpassen
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -14,6 +12,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!code || !code_verifier) {
     return res.status(400).json({ error: 'Missing code or code_verifier' });
   }
+
+  // Dynamische Redirect URI passend zur Umgebung
+  const redirectUri =
+    process.env.NODE_ENV === 'production'
+      ? 'https://qr-spotify-player.vercel.app/callback'
+      : 'http://localhost:3000/callback';
 
   try {
     const params = new URLSearchParams();
