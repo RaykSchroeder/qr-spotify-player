@@ -1,9 +1,6 @@
+// pages/callback.tsx
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-
-const clientId = '349608c2c10e4aaf84adc17e8d44e520';
-const redirectUri = 'https://qr-spotify-player.vercel.app/callback';
-
 
 export default function Callback() {
   const router = useRouter();
@@ -22,19 +19,10 @@ export default function Callback() {
       }
 
       try {
-        const params = new URLSearchParams();
-        params.append('client_id', clientId);
-        params.append('grant_type', 'authorization_code');
-        params.append('code', code);
-        params.append('redirect_uri', redirectUri);
-        params.append('code_verifier', verifier);
-
-        const response = await fetch('https://accounts.spotify.com/api/token', {
+        const response = await fetch('/api/token', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: params.toString(),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, code_verifier: verifier }),
         });
 
         const data = await response.json();
@@ -42,7 +30,7 @@ export default function Callback() {
         if (data.access_token) {
           localStorage.setItem('access_token', data.access_token);
           setMessage('Login erfolgreich! Weiterleitung...');
-          router.push('/player'); // z. B. dein Player
+          router.push('/player');
         } else {
           setMessage('Token konnte nicht abgerufen werden.');
         }
