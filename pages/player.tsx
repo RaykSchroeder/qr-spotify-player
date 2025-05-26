@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPlay, faPause, faBackward, faForward, faQrcode } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-library.add(faPlay, faPause, faBackward, faForward, faQrcode);
+library.add(...[faPlay, faPause, faBackward, faForward, faQrcode]);
+
 
 
 
