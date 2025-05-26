@@ -1,1 +1,3 @@
-import '@/lib/fontawesome';
+// pages/_app.tsx
+import '../lib/fontawesome';
+
