@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
 
 export default function Callback() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function Callback() {
         grant_type: 'authorization_code',
         code: String(code),
         redirect_uri: redirectUri,
-        client_id: '349608c2c10e4aaf84adc17e8d44e520',
+        client_id: clientId,
         code_verifier: verifier || '',
       });
 
