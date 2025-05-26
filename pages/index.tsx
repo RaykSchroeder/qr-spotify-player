@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
 
-const clientId = '349608c2c10e4aaf84adc17e8d44e520'; // Ersetze durch deinen Spotify Client ID
+const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+
 
 const scopes = [
   'user-read-private',
