@@ -6,18 +6,25 @@ QrScanner.WORKER_PATH = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner-worker.mi
 
 interface QRScannerProps {
   onScan: (result: string) => void;
+  style?: React.CSSProperties;
 }
 
-export default function QRScanner({ onScan }: QRScannerProps) {
+export default function QRScanner({ onScan, style }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
+  const onScanRef = useRef(onScan);
+
+  // Immer die aktuelle onScan-Funktion speichern
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
 
   useEffect(() => {
     if (videoRef.current) {
       scannerRef.current = new QrScanner(
         videoRef.current,
         (result) => {
-          onScan(result);
+          onScanRef.current(result);
         }
       );
       scannerRef.current.start();
@@ -27,7 +34,7 @@ export default function QRScanner({ onScan }: QRScannerProps) {
         scannerRef.current?.destroy();
       };
     }
-  }, [onScan]);
+  }, []);
 
-  return <video ref={videoRef} style={{ width: '300px', margin: 'auto', display: 'block' }} />;
+  return <video ref={videoRef} style={{ width: '300px', margin: 'auto', display: 'block', ...style }} />;
 }
