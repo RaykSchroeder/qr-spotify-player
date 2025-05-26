@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faPause, faForward, faBackward, faQrcode } from '@fortawesome/free-solid-svg-icons';
-
 
 type Device = {
   id: string;
@@ -170,40 +168,20 @@ export default function Player() {
 
       {currentUri && (
         <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => controlPlayer('play')}
-            style={buttonStyle}
-            aria-label="Play"
-          >
-            <FontAwesomeIcon icon={faPlay} /> Play
+          <button onClick={() => controlPlayer('play')} style={buttonStyle} aria-label="Play">
+            <FontAwesomeIcon icon="play" /> Play
           </button>
-          <button
-            onClick={() => controlPlayer('pause')}
-            style={buttonStyle}
-            aria-label="Pause"
-          >
-            <FontAwesomeIcon icon={faPause} /> Pause
+          <button onClick={() => controlPlayer('pause')} style={buttonStyle} aria-label="Pause">
+            <FontAwesomeIcon icon="pause" /> Pause
           </button>
-          <button
-            onClick={() => controlPlayer('seek_backward')}
-            style={buttonStyle}
-            aria-label="10 Sekunden zurück"
-          >
-            <FontAwesomeIcon icon={faBackward} /> 10s zurück
+          <button onClick={() => controlPlayer('seek_backward')} style={buttonStyle} aria-label="10 Sekunden zurück">
+            <FontAwesomeIcon icon="backward" /> 10s zurück
           </button>
-          <button
-            onClick={() => controlPlayer('seek_forward')}
-            style={buttonStyle}
-            aria-label="10 Sekunden vor"
-          >
-            <FontAwesomeIcon icon={faForward} /> 10s vor
+          <button onClick={() => controlPlayer('seek_forward')} style={buttonStyle} aria-label="10 Sekunden vor">
+            <FontAwesomeIcon icon="forward" /> 10s vor
           </button>
-          <button
-            onClick={() => setCurrentUri(null)}
-            style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}
-            aria-label="Neuen Song scannen"
-          >
-            <FontAwesomeIcon icon={faQrcode} /> Neuer Song (scannen)
+          <button onClick={() => setCurrentUri(null)} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }} aria-label="Neuen Song scannen">
+            <FontAwesomeIcon icon="qrcode" /> Neuer Song (scannen)
           </button>
         </div>
       )}
