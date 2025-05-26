@@ -26,7 +26,6 @@ export default function Player() {
     setToken(accessToken);
   }, []);
 
-  // Benutzerinfos abrufen
   useEffect(() => {
     if (!token) return;
 
@@ -49,7 +48,6 @@ export default function Player() {
     fetchUser();
   }, [token]);
 
-  // Geräte auslesen
   useEffect(() => {
     if (!token) return;
 
@@ -70,7 +68,6 @@ export default function Player() {
         if (active) {
           setActiveDeviceId(active.id);
         } else if (data.devices.length > 0) {
-          // Wenn kein aktives Gerät, aktiviere das erste verfügbare
           await activateDevice(data.devices[0].id);
           setActiveDeviceId(data.devices[0].id);
         } else {
@@ -160,29 +157,80 @@ export default function Player() {
   };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-      <h1>Spotify Player</h1>
+    <div style={{ maxWidth: 420, margin: '2rem auto', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: '0 1rem' }}>
+      <h1 style={{ color: '#1DB954', marginBottom: '0.5rem' }}>Spotify Player</h1>
 
-      {userName && <p>Angemeldet als: <strong>{userName}</strong></p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {userName && <p style={{ fontSize: '1rem' }}>Angemeldet als: <strong>{userName}</strong></p>}
+      {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
 
       {!currentUri && <QRScanner onScan={(data) => playTrack(data)} />}
 
       {currentUri && (
-        <div style={{ marginTop: '1rem' }}>
-          <button onClick={() => controlPlayer('play')}>▶️ Play</button>
-          <button onClick={() => controlPlayer('pause')}>⏸️ Pause</button>
-          <button onClick={() => controlPlayer('seek_backward')}>⏪ 10s zurück</button>
-          <button onClick={() => controlPlayer('seek_forward')}>⏩ 10s vor</button>
-          <button onClick={() => setCurrentUri(null)}>🔄 Neuer Song (scannen)</button>
+        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => controlPlayer('play')}
+            style={buttonStyle}
+            aria-label="Play"
+          >
+            <i className="fa fa-play" /> Play
+          </button>
+          <button
+            onClick={() => controlPlayer('pause')}
+            style={buttonStyle}
+            aria-label="Pause"
+          >
+            <i className="fa fa-pause" /> Pause
+          </button>
+          <button
+            onClick={() => controlPlayer('seek_backward')}
+            style={buttonStyle}
+            aria-label="10 Sekunden zurück"
+          >
+            <i className="fa fa-backward" /> 10s zurück
+          </button>
+          <button
+            onClick={() => controlPlayer('seek_forward')}
+            style={buttonStyle}
+            aria-label="10 Sekunden vor"
+          >
+            <i className="fa fa-forward" /> 10s vor
+          </button>
+          <button
+            onClick={() => setCurrentUri(null)}
+            style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}
+            aria-label="Neuen Song scannen"
+          >
+            <i className="fa fa-qrcode" /> Neuer Song (scannen)
+          </button>
         </div>
       )}
 
-      <div style={{ marginTop: '2rem' }}>
-        <h2>Verfügbare Geräte:</h2>
-        <ul>
+      <div style={{ marginTop: '2rem', textAlign: 'left' }}>
+        <h2 style={{ borderBottom: '2px solid #1DB954', paddingBottom: '0.25rem' }}>Verfügbare Geräte:</h2>
+        <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
           {devices.map((device) => (
-            <li key={device.id}>
+            <li
+              key={device.id}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: device.is_active ? '#1DB954' : '#eee',
+                color: device.is_active ? 'white' : '#333',
+                borderRadius: 8,
+                marginBottom: '0.5rem',
+                cursor: 'pointer',
+                userSelect: 'none',
+                fontWeight: device.is_active ? 'bold' : 'normal',
+                transition: 'background-color 0.2s',
+              }}
+              onClick={() => {
+                if (!device.is_active) {
+                  activateDevice(device.id);
+                  setActiveDeviceId(device.id);
+                  setError('');
+                }
+              }}
+              title={device.is_active ? 'Aktives Gerät' : 'Auf dieses Gerät wechseln'}
+            >
               {device.name} {device.is_active && '(Aktiv)'}
             </li>
           ))}
@@ -191,3 +239,17 @@ export default function Player() {
     </div>
   );
 }
+
+const buttonStyle: React.CSSProperties = {
+  backgroundColor: '#1DB954',
+  color: 'white',
+  border: 'none',
+  padding: '0.6rem 1.2rem',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontSize: '1rem',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  transition: 'background-color 0.2s',
+};
