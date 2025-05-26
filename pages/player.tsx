@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faPause, faBackward, faForward, faQrcode } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPause, faForward, faBackward, faQrcode } from '@fortawesome/free-solid-svg-icons';
+
 
 type Device = {
   id: string;
