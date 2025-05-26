@@ -1,7 +1,8 @@
 // pages/api/token.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-const clientId = '349608c2c10e4aaf84adc17e8d44e520';
+const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+
 const redirectUri = 'https://qr-spotify-player.vercel.app/callback';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
