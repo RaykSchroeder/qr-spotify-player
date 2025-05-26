@@ -1,16 +1,3 @@
-Skip to content
-
-raykschroeder's projects
-
-raykschroeder's projects
-Hobby
-
-qr-spotify-player
-
-    4nHjyp4FE
-
-pages/index.tsx
-
 import React, { useEffect, useState } from 'react';
 
 import { generateCodeChallenge, generateCodeVerifier } from '@/utils/pkce';
