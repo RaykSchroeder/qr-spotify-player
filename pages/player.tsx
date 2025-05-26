@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlay, faPause, faBackward, faForward, faQrcode } from '@fortawesome/free-solid-svg-icons';
 
 type Device = {
   id: string;
@@ -172,35 +174,35 @@ export default function Player() {
             style={buttonStyle}
             aria-label="Play"
           >
-            <i className="fa fa-play" /> Play
+            <FontAwesomeIcon icon={faPlay} /> Play
           </button>
           <button
             onClick={() => controlPlayer('pause')}
             style={buttonStyle}
             aria-label="Pause"
           >
-            <i className="fa fa-pause" /> Pause
+            <FontAwesomeIcon icon={faPause} /> Pause
           </button>
           <button
             onClick={() => controlPlayer('seek_backward')}
             style={buttonStyle}
             aria-label="10 Sekunden zurück"
           >
-            <i className="fa fa-backward" /> 10s zurück
+            <FontAwesomeIcon icon={faBackward} /> 10s zurück
           </button>
           <button
             onClick={() => controlPlayer('seek_forward')}
             style={buttonStyle}
             aria-label="10 Sekunden vor"
           >
-            <i className="fa fa-forward" /> 10s vor
+            <FontAwesomeIcon icon={faForward} /> 10s vor
           </button>
           <button
             onClick={() => setCurrentUri(null)}
             style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}
             aria-label="Neuen Song scannen"
           >
-            <i className="fa fa-qrcode" /> Neuer Song (scannen)
+            <FontAwesomeIcon icon={faQrcode} /> Neuer Song (scannen)
           </button>
         </div>
       )}
@@ -252,4 +254,5 @@ const buttonStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '0.4rem',
   transition: 'background-color 0.2s',
+  verticalAlign: 'middle',
 };
