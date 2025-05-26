@@ -1,6 +1,5 @@
-import { config, library } from '@fortawesome/fontawesome-svg-core';
-import { faPlay, faPause, faForward, faBackward, faQrcode } from '@fortawesome/free-solid-svg-icons';
-import '@fortawesome/fontawesome-svg-core/styles.css';
+// lib/fontawesome.ts
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faPlay, faPause, faStepForward, faStepBackward } from '@fortawesome/free-solid-svg-icons';
 
-config.autoAddCss = false;
-library.add(faPlay, faPause, faForward, faBackward, faQrcode);
+library.add(faPlay, faPause, faStepForward, faStepBackward);
