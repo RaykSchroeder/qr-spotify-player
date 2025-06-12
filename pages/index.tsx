@@ -54,7 +54,7 @@ export default function Home() {
         boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
       }}
     >
-      <h1 style={{ marginBottom: '0.5rem' }}>Spotify Auth HitsterRayk</h1>
+      <h1 style={{ marginBottom: '0.5rem' }}>Spotify Auth</h1>
       <p style={{ color: '#b3b3b3' }}>Logge dich mit deinem Spotify-Account ein, um zu starten.</p>
       {authUrl && (
         <a href={authUrl} style={{ textDecoration: 'none', width: '100%' }}>
