@@ -5,7 +5,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPlay, faPause, faBackward, faForward, faQrcode, faBook } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-library.add(...[faPlay, faPause, faBackward, faForward, faQrcode, faBook]);
+library.add(faPlay, faPause, faBackward, faForward, faQrcode, faBook);
 
 type Device = {
   id: string;
@@ -23,11 +23,8 @@ export default function Player() {
   const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
-
-  // Ref für Keep-Alive-Intervall
   const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Token aus localStorage laden
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
     if (storedToken) {
@@ -35,7 +32,6 @@ export default function Player() {
     }
   }, []);
 
-  // Access Token regelmäßig mit refreshAccessToken erneuern (alle 50 Minuten)
   useEffect(() => {
     if (!token) return;
 
@@ -45,18 +41,14 @@ export default function Player() {
         setToken(newToken);
       } else {
         setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
-        // Optional: Ausloggen oder Redirect zum Login
       }
     }, 1000 * 60 * 50);
 
     return () => clearInterval(interval);
   }, [token]);
 
-  // Geräte abrufen und aktives Gerät setzen (alle 5 Sekunden)
   useEffect(() => {
     if (!token) return;
-
-    let interval: NodeJS.Timeout;
 
     const fetchDevices = async () => {
       try {
@@ -75,7 +67,6 @@ export default function Player() {
         if (active) {
           setActiveDeviceId(active.id);
         } else if (data.devices.length > 0) {
-          await activateDevice(data.devices[0].id);
           setActiveDeviceId(data.devices[0].id);
         } else {
           setError('Kein verfügbares Gerät gefunden. Bitte Spotify auf einem Gerät öffnen.');
@@ -85,15 +76,13 @@ export default function Player() {
       }
     };
 
-    fetchDevices(); // beim Laden
-    interval = setInterval(fetchDevices, 5000);
-
+    fetchDevices();
+    const interval = setInterval(fetchDevices, 5000);
     return () => clearInterval(interval);
   }, [token]);
 
   async function activateDevice(deviceId: string) {
     if (!token) return;
-
     try {
       await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
@@ -106,8 +95,7 @@ export default function Player() {
   }
 
   const playTrack = async (uri: string) => {
-    if (!token) return;
-    if (!activeDeviceId) {
+    if (!token || !activeDeviceId) {
       setError('Kein aktives Gerät zum Abspielen gefunden.');
       return;
     }
@@ -122,14 +110,13 @@ export default function Player() {
       else {
         setCurrentUri(uri);
         setError('');
-        clearKeepAlive(); // Stoppe Keep-Alive, falls vorher aktiv
+        clearKeepAlive();
       }
     } catch {
       setError('Netzwerkfehler beim Abspielen.');
     }
   };
 
-  // Keep-Alive Intervall stoppen
   const clearKeepAlive = () => {
     if (keepAliveIntervalRef.current) {
       clearInterval(keepAliveIntervalRef.current);
@@ -137,7 +124,6 @@ export default function Player() {
     }
   };
 
-  // Sendet "Ping" an aktives Gerät (z.B. Player Status abfragen)
   const sendKeepAlivePing = async () => {
     if (!token || !activeDeviceId) return;
 
@@ -145,10 +131,7 @@ export default function Player() {
       await fetch('https://api.spotify.com/v1/me/player', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Erfolg ignorieren, nur aktiv halten
-    } catch {
-      // Fehler ignorieren
-    }
+    } catch {}
   };
 
   const controlPlayer = async (action: string) => {
@@ -185,13 +168,11 @@ export default function Player() {
         if (!res.ok) setError(`Fehler beim ${endpoint} des Players.`);
 
         if (action === 'pause') {
-          // Starte Keep-Alive Intervall alle 10 Sekunden, damit Gerät aktiv bleibt
           clearKeepAlive();
           keepAliveIntervalRef.current = setInterval(() => {
             sendKeepAlivePing();
           }, 10000);
         } else {
-          // Bei Play oder anderen Aktionen Keep-Alive stoppen
           clearKeepAlive();
         }
       }
@@ -204,25 +185,47 @@ export default function Player() {
     <div style={{ maxWidth: 420, margin: '2rem auto', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: '0 1rem' }}>
       <h1 style={{ color: '#1DB954', marginBottom: '0.5rem' }}>Spotify Player</h1>
 
-      {userName && <p style={{ fontSize: '1rem' }}>Angemeldet als: <strong>{userName}</strong></p>}
-      {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
+      {devices.length > 0 && (
+        <div style={{ margin: '1rem 0' }}>
+          <label htmlFor="device-select" style={{ marginRight: '0.5rem' }}>🎧 Gerät wählen:</label>
+          <select
+            id="device-select"
+            value={activeDeviceId || ''}
+            onChange={async (e) => {
+              const selectedId = e.target.value;
+              setActiveDeviceId(selectedId);
+              await activateDevice(selectedId);
+            }}
+            style={{
+              padding: '0.5rem',
+              fontSize: '1rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              minWidth: 200
+            }}
+          >
+            {devices.map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.name} ({device.type}) {device.is_active ? '✅' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
+      {devices.length === 0 && (
+        <p style={{ color: 'gray' }}>🔍 Keine Spotify-Geräte gefunden. Bitte Spotify auf einem Gerät öffnen.</p>
+      )}
+
+      {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
       {!currentUri && <QRScanner onScan={(data) => playTrack(data)} />}
 
       {currentUri && (
         <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button onClick={() => controlPlayer('play')} style={buttonStyle} aria-label="Play">
-            <FontAwesomeIcon icon="play" /> Play
-          </button>
-          <button onClick={() => controlPlayer('pause')} style={buttonStyle} aria-label="Pause">
-            <FontAwesomeIcon icon="pause" /> Pause
-          </button>
-          <button onClick={() => controlPlayer('seek_backward')} style={buttonStyle} aria-label="10 Sekunden zurück">
-            <FontAwesomeIcon icon="backward" /> 10s zurück
-          </button>
-          <button onClick={() => controlPlayer('seek_forward')} style={buttonStyle} aria-label="10 Sekunden vor">
-            <FontAwesomeIcon icon="forward" /> 10s vor
-          </button>
+          <button onClick={() => controlPlayer('play')} style={buttonStyle}><FontAwesomeIcon icon="play" /> Play</button>
+          <button onClick={() => controlPlayer('pause')} style={buttonStyle}><FontAwesomeIcon icon="pause" /> Pause</button>
+          <button onClick={() => controlPlayer('seek_backward')} style={buttonStyle}><FontAwesomeIcon icon="backward" /> 10s zurück</button>
+          <button onClick={() => controlPlayer('seek_forward')} style={buttonStyle}><FontAwesomeIcon icon="forward" /> 10s vor</button>
           <button onClick={() => setCurrentUri(null)} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}>
             Stop & Neuer Scan
           </button>
@@ -232,7 +235,6 @@ export default function Player() {
       <button
         onClick={() => setShowRules(true)}
         style={{ marginTop: '2rem', backgroundColor: '#1DB954', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '4px', cursor: 'pointer' }}
-        aria-label="Spielregeln anzeigen"
       >
         <FontAwesomeIcon icon="book" /> Spielregeln anzeigen
       </button>
@@ -254,8 +256,6 @@ const buttonStyle: React.CSSProperties = {
   fontSize: '0.9rem',
 };
 
-// Dummy Refresh Token Funktion (muss du ersetzen)
 async function refreshAccessToken() {
-  // Beispiel: Token erneuern über deine API oder Spotify-Endpoint
-  return null; // oder neuen Token zurückgeben
+  return null; // Muss durch deine Logik ersetzt werden
 }
