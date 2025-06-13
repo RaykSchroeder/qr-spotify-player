@@ -80,25 +80,26 @@ export default function Player() {
     return () => clearInterval(interval);
   }, [token]);
 
-  useEffect(() => {
-    if (!token || !activeDeviceId || !isPaused) {
-      if (keepAliveIntervalRef.current) {
-        clearInterval(keepAliveIntervalRef.current);
-        keepAliveIntervalRef.current = null;
-      }
-      return;
+useEffect(() => {
+  if (!token || !activeDeviceId) {
+    if (keepAliveIntervalRef.current) {
+      clearInterval(keepAliveIntervalRef.current);
+      keepAliveIntervalRef.current = null;
     }
+    return;
+  }
 
+  if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
+
+  keepAliveIntervalRef.current = setInterval(() => {
+    sendKeepAliveSeek();
+  }, 3000); // Alle 3 Sekunden Keep-Alive senden, egal ob Play oder Pause
+
+  return () => {
     if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
+  };
+}, [token, activeDeviceId]);
 
-    keepAliveIntervalRef.current = setInterval(() => {
-      sendKeepAliveSeek();
-    }, 3000);
-
-    return () => {
-      if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
-    };
-  }, [token, activeDeviceId, isPaused]);
 
   const activateDevice = async (deviceId: string) => {
     if (!token) return;
