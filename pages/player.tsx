@@ -15,34 +15,8 @@ type Device = {
   type: string;
 };
 
-const refreshAccessToken = async (): Promise<string | null> => {
-  const refreshToken = localStorage.getItem('refresh_token');
-  if (!refreshToken) return null;
-
-  try {
-    const res = await fetch('/api/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    const newAccessToken = data.access_token;
-
-    if (newAccessToken) {
-      localStorage.setItem('access_token', newAccessToken);
-      return newAccessToken;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-};
-
 export default function Player() {
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('access_token'));
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [currentUri, setCurrentUri] = useState<string | null>(null);
@@ -50,13 +24,7 @@ export default function Player() {
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
 
-  // Beim Laden: Token aus localStorage holen
-  useEffect(() => {
-    const savedToken = localStorage.getItem('access_token');
-    if (savedToken) setToken(savedToken);
-  }, []);
-
-  // Token automatisch alle 50 Minuten erneuern
+  // Token refresh alle 50 Minuten
   useEffect(() => {
     if (!token) return;
 
@@ -66,14 +34,13 @@ export default function Player() {
         setToken(newToken);
       } else {
         setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
-        // Optional: z.B. Logout oder Weiterleitung zum Login
+        // Optional: User ausloggen oder weiterleiten
       }
-    }, 1000 * 60 * 50);
+    }, 1000 * 60 * 50); // 50 Minuten
 
     return () => clearInterval(interval);
   }, [token]);
 
-  // Geräte laden und aktives Gerät setzen
   useEffect(() => {
     if (!token) return;
 
@@ -104,7 +71,11 @@ export default function Player() {
       }
     };
 
-    fetchDevices();
+    fetchDevices(); // Direkt beim Laden
+
+    const interval = setInterval(fetchDevices, 5000); // Alle 5 Sekunden Geräte aktualisieren
+
+    return () => clearInterval(interval); // Aufräumen
   }, [token]);
 
   async function activateDevice(deviceId: string) {
@@ -129,11 +100,20 @@ export default function Player() {
     }
 
     try {
+      // Gerät aktivieren ohne direkt abzuspielen, damit Spotify Player "wach" bleibt
+      await fetch('https://api.spotify.com/v1/me/player', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_ids: [activeDeviceId], play: false }),
+      });
+
+      // Song abspielen
       const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${activeDeviceId}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ uris: [uri] }),
       });
+
       if (!res.ok) setError('Konnte Song nicht abspielen.');
       else {
         setCurrentUri(uri);
@@ -251,6 +231,32 @@ export default function Player() {
     </div>
   );
 }
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) return null;
+
+  try {
+    const res = await fetch('/api/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const newAccessToken = data.access_token;
+
+    if (newAccessToken) {
+      localStorage.setItem('access_token', newAccessToken);
+      return newAccessToken;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 const buttonStyle: React.CSSProperties = {
   backgroundColor: '#1DB954',
