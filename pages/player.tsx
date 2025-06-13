@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import RulesModal from '@/components/RulesModal';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -24,8 +24,6 @@ export default function Player() {
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-
-  const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
@@ -80,27 +78,6 @@ export default function Player() {
     return () => clearInterval(interval);
   }, [token]);
 
-useEffect(() => {
-  if (!token || !activeDeviceId) {
-    if (keepAliveIntervalRef.current) {
-      clearInterval(keepAliveIntervalRef.current);
-      keepAliveIntervalRef.current = null;
-    }
-    return;
-  }
-
-  if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
-
-  keepAliveIntervalRef.current = setInterval(() => {
-    sendKeepAliveSeek();
-  }, 3000); // Alle 3 Sekunden Keep-Alive senden, egal ob Play oder Pause
-
-  return () => {
-    if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
-  };
-}, [token, activeDeviceId]);
-
-
   const activateDevice = async (deviceId: string) => {
     if (!token) return;
     try {
@@ -135,27 +112,10 @@ useEffect(() => {
       else {
         setCurrentUri(uri);
         setError('');
-        setIsPaused(false); // Stoppe KeepAlive wenn neuer Song gespielt wird
+        setIsPaused(false);
       }
     } catch {
       setError('Netzwerkfehler beim Abspielen.');
-    }
-  };
-
-  const sendKeepAliveSeek = async () => {
-    if (!token || !activeDeviceId) return;
-    try {
-      const res = await fetch('https://api.spotify.com/v1/me/player', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      const currentPos = data.progress_ms || 0;
-      const seekRes = await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${currentPos}&device_id=${activeDeviceId}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      // Fehler ignorieren
     }
   };
 
