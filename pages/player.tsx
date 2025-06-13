@@ -5,7 +5,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPlay, faPause, faBackward, faForward, faQrcode, faBook } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-library.add(faPlay, faPause, faBackward, faForward, faQrcode, faBook);
+library.add(...[faPlay, faPause, faBackward, faForward, faQrcode, faBook]);
 
 type Device = {
   id: string;
@@ -23,6 +23,8 @@ export default function Player() {
   const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
   const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -34,13 +36,14 @@ export default function Player() {
 
   useEffect(() => {
     if (!token) return;
-
     const interval = setInterval(async () => {
       const newToken = await refreshAccessToken();
-      if (newToken) setToken(newToken);
-      else setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
+      if (newToken) {
+        setToken(newToken);
+      } else {
+        setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
+      }
     }, 1000 * 60 * 50);
-
     return () => clearInterval(interval);
   }, [token]);
 
@@ -53,12 +56,10 @@ export default function Player() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-
         if (!res.ok) {
           setError('Fehler beim Abrufen der Geräte.');
           return;
         }
-
         setDevices(data.devices || []);
         const active = data.devices.find((d: Device) => d.is_active);
         if (active) {
@@ -80,11 +81,15 @@ export default function Player() {
   }, [token]);
 
   useEffect(() => {
-    if (!token || !activeDeviceId) return;
-
-    if (keepAliveIntervalRef.current) {
-      clearInterval(keepAliveIntervalRef.current);
+    if (!token || !activeDeviceId || !isPaused) {
+      if (keepAliveIntervalRef.current) {
+        clearInterval(keepAliveIntervalRef.current);
+        keepAliveIntervalRef.current = null;
+      }
+      return;
     }
+
+    if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
 
     keepAliveIntervalRef.current = setInterval(() => {
       sendKeepAliveSeek();
@@ -93,28 +98,7 @@ export default function Player() {
     return () => {
       if (keepAliveIntervalRef.current) clearInterval(keepAliveIntervalRef.current);
     };
-  }, [token, activeDeviceId]);
-
-  const sendKeepAliveSeek = async () => {
-    if (!token || !activeDeviceId) return;
-
-    try {
-      const posRes = await fetch('https://api.spotify.com/v1/me/player', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await posRes.json();
-      const currentPos = data.progress_ms ?? 0;
-      const offset = Math.random() > 0.5 ? 1 : -1;
-      const newPos = Math.max(currentPos + offset, 0);
-
-      await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${newPos}&device_id=${activeDeviceId}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      // Ignorieren
-    }
-  };
+  }, [token, activeDeviceId, isPaused]);
 
   const activateDevice = async (deviceId: string) => {
     if (!token) return;
@@ -140,7 +124,6 @@ export default function Player() {
       setError('Kein aktives Gerät zum Abspielen gefunden.');
       return;
     }
-
     try {
       const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${activeDeviceId}`, {
         method: 'PUT',
@@ -151,9 +134,27 @@ export default function Player() {
       else {
         setCurrentUri(uri);
         setError('');
+        setIsPaused(false); // Stoppe KeepAlive wenn neuer Song gespielt wird
       }
     } catch {
       setError('Netzwerkfehler beim Abspielen.');
+    }
+  };
+
+  const sendKeepAliveSeek = async () => {
+    if (!token || !activeDeviceId) return;
+    try {
+      const res = await fetch('https://api.spotify.com/v1/me/player', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      const currentPos = data.progress_ms || 0;
+      const seekRes = await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${currentPos}&device_id=${activeDeviceId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      // Fehler ignorieren
     }
   };
 
@@ -172,18 +173,17 @@ export default function Player() {
         const currentPos = data.progress_ms || 0;
         const offset = action === 'seek_forward' ? 10000 : -10000;
         const newPos = Math.max(currentPos + offset, 0);
-
-        const seekRes = await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${newPos}&device_id=${activeDeviceId}`, {
+        await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${newPos}&device_id=${activeDeviceId}`, {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!seekRes.ok) setError('Fehler beim Suchen im Song.');
       } else {
         const endpoint = action === 'play' ? 'play' : 'pause';
         const res = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}?device_id=${activeDeviceId}`, {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (res.ok) setIsPaused(action === 'pause');
         if (!res.ok) setError(`Fehler beim ${endpoint} des Players.`);
       }
     } catch {
@@ -194,7 +194,6 @@ export default function Player() {
   return (
     <div style={{ maxWidth: 420, margin: '2rem auto', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: '0 1rem' }}>
       <h1 style={{ color: '#1DB954', marginBottom: '0.5rem' }}>Spotify Player</h1>
-
       {userName && <p>Angemeldet als: <strong>{userName}</strong></p>}
       {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
 
@@ -219,16 +218,13 @@ export default function Player() {
           <button onClick={() => controlPlayer('pause')} style={buttonStyle}><FontAwesomeIcon icon="pause" /> Pause</button>
           <button onClick={() => controlPlayer('seek_backward')} style={buttonStyle}><FontAwesomeIcon icon="backward" /> 10s zurück</button>
           <button onClick={() => controlPlayer('seek_forward')} style={buttonStyle}><FontAwesomeIcon icon="forward" /> 10s vor</button>
-          <button onClick={() => setCurrentUri(null)} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}>
-            Neuen Song Scan
+          <button onClick={() => { setCurrentUri(null); setIsPaused(false); }} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}>
+            Neuen Song scannen
           </button>
         </div>
       )}
 
-      <button
-        onClick={() => setShowRules(true)}
-        style={{ marginTop: '2rem', backgroundColor: '#1DB954', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '4px', cursor: 'pointer' }}
-      >
+      <button onClick={() => setShowRules(true)} style={{ marginTop: '2rem', backgroundColor: '#1DB954', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '4px', cursor: 'pointer' }}>
         <FontAwesomeIcon icon="book" /> Spielregeln anzeigen
       </button>
 
@@ -249,7 +245,6 @@ const buttonStyle: React.CSSProperties = {
   fontSize: '0.9rem',
 };
 
-// Platzhalter für Token Refresh – hier deine tatsächliche Logik einbauen
-async function refreshAccessToken(): Promise<string | null> {
-  return null;
+async function refreshAccessToken() {
+  return null; // Ersetze durch echte Refresh-Token-Logik
 }
