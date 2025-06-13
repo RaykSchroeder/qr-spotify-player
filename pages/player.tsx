@@ -15,6 +15,32 @@ type Device = {
   type: string;
 };
 
+const refreshAccessToken = async (): Promise<string | null> => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) return null;
+
+  try {
+    const res = await fetch('/api/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const newAccessToken = data.access_token;
+
+    if (newAccessToken) {
+      localStorage.setItem('access_token', newAccessToken);
+      return newAccessToken;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export default function Player() {
   const [token, setToken] = useState<string | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -23,50 +49,35 @@ export default function Player() {
   const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
-useEffect(() => {
-  if (!token) return;
 
-  let interval: NodeJS.Timeout;
+  // Beim Laden: Token aus localStorage holen
+  useEffect(() => {
+    const savedToken = localStorage.getItem('access_token');
+    if (savedToken) setToken(savedToken);
+  }, []);
 
-  const fetchDevices = async () => {
-    try {
-      const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError('Fehler beim Abrufen der Geräte.');
-        return;
-      }
-
-      setDevices(data.devices || []);
-      const active = data.devices.find((d: Device) => d.is_active);
-      if (active) {
-        setActiveDeviceId(active.id);
-      } else if (data.devices.length > 0) {
-        await activateDevice(data.devices[0].id);
-        setActiveDeviceId(data.devices[0].id);
-      } else {
-        setError('Kein verfügbares Gerät gefunden. Bitte Spotify auf einem Gerät öffnen.');
-      }
-    } catch {
-      setError('Netzwerkfehler beim Abrufen der Geräte.');
-    }
-  };
-
-  fetchDevices(); // Direkt beim Laden
-
-  interval = setInterval(fetchDevices, 5000); // Alle 5 Sekunden
-
-  return () => clearInterval(interval); // Aufräumen
-}, [token]);
-
-
+  // Token automatisch alle 50 Minuten erneuern
   useEffect(() => {
     if (!token) return;
 
-    async function fetchDevices() {
+    const interval = setInterval(async () => {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        setToken(newToken);
+      } else {
+        setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
+        // Optional: z.B. Logout oder Weiterleitung zum Login
+      }
+    }, 1000 * 60 * 50);
+
+    return () => clearInterval(interval);
+  }, [token]);
+
+  // Geräte laden und aktives Gerät setzen
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchDevices = async () => {
       try {
         const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
           headers: { Authorization: `Bearer ${token}` },
@@ -91,7 +102,7 @@ useEffect(() => {
       } catch {
         setError('Netzwerkfehler beim Abrufen der Geräte.');
       }
-    }
+    };
 
     fetchDevices();
   }, [token]);
