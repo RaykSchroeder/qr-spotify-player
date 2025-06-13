@@ -1,17 +1,11 @@
 import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
+import RulesModal from '@/components/RulesModal';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPlay, faPause, faBackward, faForward, faQrcode } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPause, faBackward, faForward, faQrcode, faBook } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-library.add(...[faPlay, faPause, faBackward, faForward, faQrcode]);
-
-
-
-
-
-
-
+library.add(...[faPlay, faPause, faBackward, faForward, faQrcode, faBook]);
 
 type Device = {
   id: string;
@@ -28,6 +22,7 @@ export default function Player() {
   const [currentUri, setCurrentUri] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
@@ -192,10 +187,14 @@ export default function Player() {
             <FontAwesomeIcon icon="forward" /> 10s vor
           </button>
           <button onClick={() => setCurrentUri(null)} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }} aria-label="Neuen Song scannen">
-            <FontAwesomeIcon icon="qrcode" /> Neuer Song (scannen)
+            <FontAwesomeIcon icon="qrcode" /> Neuer Song
           </button>
         </div>
       )}
+
+      <button onClick={() => setShowRules(true)} style={{ ...buttonStyle, marginTop: '1.5rem' }} aria-label="Spielregeln anzeigen">
+        <FontAwesomeIcon icon="book" /> Spielregeln
+      </button>
 
       <div style={{ marginTop: '2rem', textAlign: 'left' }}>
         <h2 style={{ borderBottom: '2px solid #1DB954', paddingBottom: '0.25rem' }}>Verfügbare Geräte:</h2>
@@ -228,6 +227,8 @@ export default function Player() {
           ))}
         </ul>
       </div>
+
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
     </div>
   );
 }
