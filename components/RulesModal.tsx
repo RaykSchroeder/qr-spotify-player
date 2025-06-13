@@ -1,11 +1,13 @@
 import React from 'react';
 
 type Props = {
-  
+  show: boolean;
   onClose: () => void;
 };
 
-const RulesModal: React.FC<Props> = ({ onClose }) => {
+const RulesModal: React.FC<Props> = ({ show, onClose }) => {
+  if (!show) return null;
+
   return (
     <div style={{
       position: 'fixed',
