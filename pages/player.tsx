@@ -23,37 +23,45 @@ export default function Player() {
   const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
+useEffect(() => {
+  if (!token) return;
 
-  useEffect(() => {
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) {
-      setError('Kein Access Token gefunden. Bitte zuerst einloggen.');
-      return;
-    }
-    setToken(accessToken);
-  }, []);
+  let interval: NodeJS.Timeout;
 
-  useEffect(() => {
-    if (!token) return;
+  const fetchDevices = async () => {
+    try {
+      const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
 
-    async function fetchUser() {
-      try {
-        const res = await fetch('https://api.spotify.com/v1/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          setError('Fehler beim Abrufen der Benutzerinfos. Bitte überprüfe deinen Login.');
-          return;
-        }
-        const data = await res.json();
-        setUserName(data.display_name || data.id);
-      } catch {
-        setError('Netzwerkfehler beim Abrufen der Benutzerinfos.');
+      if (!res.ok) {
+        setError('Fehler beim Abrufen der Geräte.');
+        return;
       }
-    }
 
-    fetchUser();
-  }, [token]);
+      setDevices(data.devices || []);
+      const active = data.devices.find((d: Device) => d.is_active);
+      if (active) {
+        setActiveDeviceId(active.id);
+      } else if (data.devices.length > 0) {
+        await activateDevice(data.devices[0].id);
+        setActiveDeviceId(data.devices[0].id);
+      } else {
+        setError('Kein verfügbares Gerät gefunden. Bitte Spotify auf einem Gerät öffnen.');
+      }
+    } catch {
+      setError('Netzwerkfehler beim Abrufen der Geräte.');
+    }
+  };
+
+  fetchDevices(); // Direkt beim Laden
+
+  interval = setInterval(fetchDevices, 5000); // Alle 5 Sekunden
+
+  return () => clearInterval(interval); // Aufräumen
+}, [token]);
+
 
   useEffect(() => {
     if (!token) return;
