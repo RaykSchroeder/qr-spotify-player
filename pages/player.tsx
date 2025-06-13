@@ -180,7 +180,7 @@ export default function Player() {
           clearKeepAlive();
           keepAliveIntervalRef.current = setInterval(() => {
             sendKeepAlivePing();
-          }, 10000);
+          }, 4000);
         } else {
           clearKeepAlive();
         }
