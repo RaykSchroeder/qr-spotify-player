@@ -5,7 +5,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPlay, faPause, faBackward, faForward, faQrcode, faBook } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-library.add(faPlay, faPause, faBackward, faForward, faQrcode, faBook);
+library.add(...[faPlay, faPause, faBackward, faForward, faQrcode, faBook]);
 
 type Device = {
   id: string;
@@ -27,7 +27,9 @@ export default function Player() {
 
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
-    if (storedToken) setToken(storedToken);
+    if (storedToken) {
+      setToken(storedToken);
+    }
   }, []);
 
   useEffect(() => {
@@ -35,8 +37,11 @@ export default function Player() {
 
     const interval = setInterval(async () => {
       const newToken = await refreshAccessToken();
-      if (newToken) setToken(newToken);
-      else setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
+      if (newToken) {
+        setToken(newToken);
+      } else {
+        setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
+      }
     }, 1000 * 60 * 50);
 
     return () => clearInterval(interval);
@@ -51,6 +56,7 @@ export default function Player() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
+
         if (!res.ok) {
           setError('Fehler beim Abrufen der Geräte.');
           return;
@@ -76,9 +82,8 @@ export default function Player() {
     return () => clearInterval(interval);
   }, [token]);
 
-  async function activateDevice(deviceId: string) {
+  const activateDevice = async (deviceId: string) => {
     if (!token) return;
-
     try {
       await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
@@ -88,7 +93,13 @@ export default function Player() {
     } catch {
       setError('Fehler beim Aktivieren des Geräts.');
     }
-  }
+  };
+
+  const handleDeviceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    await activateDevice(selectedId);
+    setActiveDeviceId(selectedId);
+  };
 
   const playTrack = async (uri: string) => {
     if (!token || !activeDeviceId) {
@@ -102,9 +113,8 @@ export default function Player() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ uris: [uri] }),
       });
-      if (!res.ok) {
-        setError('Konnte Song nicht abspielen.');
-      } else {
+      if (!res.ok) setError('Konnte Song nicht abspielen.');
+      else {
         setCurrentUri(uri);
         setError('');
         clearKeepAlive();
@@ -125,18 +135,11 @@ export default function Player() {
     if (!token || !activeDeviceId) return;
 
     try {
-      const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+      await fetch('https://api.spotify.com/v1/me/player', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      const active = data.devices.find((d: Device) => d.is_active);
-
-      if (!active && activeDeviceId) {
-        console.log('Kein aktives Gerät erkannt – versuche zu aktivieren...');
-        await activateDevice(activeDeviceId);
-      }
-    } catch (err) {
-      console.error('Fehler beim Keep-Alive:', err);
+    } catch {
+      // Fehler ignorieren
     }
   };
 
@@ -171,15 +174,13 @@ export default function Player() {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) {
-          setError(`Fehler beim ${endpoint} des Players.`);
-        }
+        if (!res.ok) setError(`Fehler beim ${endpoint} des Players.`);
 
         if (action === 'pause') {
           clearKeepAlive();
           keepAliveIntervalRef.current = setInterval(() => {
             sendKeepAlivePing();
-          }, 10000); // alle 10 Sekunden prüfen und ggf. aktivieren
+          }, 10000);
         } else {
           clearKeepAlive();
         }
@@ -193,27 +194,32 @@ export default function Player() {
     <div style={{ maxWidth: 420, margin: '2rem auto', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: '0 1rem' }}>
       <h1 style={{ color: '#1DB954', marginBottom: '0.5rem' }}>Spotify Player</h1>
 
-      {userName && <p style={{ fontSize: '1rem' }}>Angemeldet als: <strong>{userName}</strong></p>}
+      {userName && <p>Angemeldet als: <strong>{userName}</strong></p>}
       {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
+
+      {devices.length > 0 && (
+        <div style={{ margin: '1rem 0' }}>
+          <label htmlFor="deviceSelect" style={{ marginRight: '0.5rem' }}>Gerät wählen:</label>
+          <select id="deviceSelect" value={activeDeviceId || ''} onChange={handleDeviceChange}>
+            {devices.map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.name} {device.is_active ? '✅' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {!currentUri && <QRScanner onScan={(data) => playTrack(data)} />}
 
       {currentUri && (
         <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button onClick={() => controlPlayer('play')} style={buttonStyle} aria-label="Play">
-            <FontAwesomeIcon icon="play" /> Play
-          </button>
-          <button onClick={() => controlPlayer('pause')} style={buttonStyle} aria-label="Pause">
-            <FontAwesomeIcon icon="pause" /> Pause
-          </button>
-          <button onClick={() => controlPlayer('seek_backward')} style={buttonStyle} aria-label="10 Sekunden zurück">
-            <FontAwesomeIcon icon="backward" /> 10s zurück
-          </button>
-          <button onClick={() => controlPlayer('seek_forward')} style={buttonStyle} aria-label="10 Sekunden vor">
-            <FontAwesomeIcon icon="forward" /> 10s vor
-          </button>
+          <button onClick={() => controlPlayer('play')} style={buttonStyle}><FontAwesomeIcon icon="play" /> Play</button>
+          <button onClick={() => controlPlayer('pause')} style={buttonStyle}><FontAwesomeIcon icon="pause" /> Pause</button>
+          <button onClick={() => controlPlayer('seek_backward')} style={buttonStyle}><FontAwesomeIcon icon="backward" /> 10s zurück</button>
+          <button onClick={() => controlPlayer('seek_forward')} style={buttonStyle}><FontAwesomeIcon icon="forward" /> 10s vor</button>
           <button onClick={() => setCurrentUri(null)} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}>
-            Neuen Song Scan
+            Stop & Neuer Scan
           </button>
         </div>
       )}
@@ -221,7 +227,6 @@ export default function Player() {
       <button
         onClick={() => setShowRules(true)}
         style={{ marginTop: '2rem', backgroundColor: '#1DB954', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '4px', cursor: 'pointer' }}
-        aria-label="Spielregeln anzeigen"
       >
         <FontAwesomeIcon icon="book" /> Spielregeln anzeigen
       </button>
@@ -243,7 +248,6 @@ const buttonStyle: React.CSSProperties = {
   fontSize: '0.9rem',
 };
 
-// Dummy Refresh Token Funktion (ersetzen durch echten Mechanismus)
 async function refreshAccessToken() {
-  return null;
+  return null; // Ersetze durch deine tatsächliche Refresh-Logik
 }
