@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import RulesModal from '@/components/RulesModal';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -23,6 +23,7 @@ export default function Player() {
   const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
+  const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
@@ -81,16 +82,6 @@ export default function Player() {
     return () => clearInterval(interval);
   }, [token]);
 
-  useEffect(() => {
-    if (!token || !activeDeviceId) return;
-
-    const interval = setInterval(() => {
-      sendKeepAlivePing();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [token, activeDeviceId]);
-
   const activateDevice = async (deviceId: string) => {
     if (!token) return;
     try {
@@ -134,13 +125,19 @@ export default function Player() {
 
   const sendKeepAlivePing = async () => {
     if (!token || !activeDeviceId) return;
-
     try {
       await fetch('https://api.spotify.com/v1/me/player', {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
       // Fehler ignorieren
+    }
+  };
+
+  const clearKeepAlive = () => {
+    if (keepAliveIntervalRef.current) {
+      clearInterval(keepAliveIntervalRef.current);
+      keepAliveIntervalRef.current = null;
     }
   };
 
@@ -169,13 +166,26 @@ export default function Player() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!seekRes.ok) setError('Fehler beim Suchen im Song.');
-      } else {
-        const endpoint = action === 'play' ? 'play' : 'pause';
-        const res = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}?device_id=${activeDeviceId}`, {
+      } else if (action === 'pause') {
+        const res = await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${activeDeviceId}`, {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) setError(`Fehler beim ${endpoint} des Players.`);
+        if (!res.ok) {
+          setError('Fehler beim Pausieren des Players.');
+        } else {
+          clearKeepAlive();
+          keepAliveIntervalRef.current = setInterval(() => {
+            sendKeepAlivePing();
+          }, 3000);
+        }
+      } else if (action === 'play') {
+        clearKeepAlive();
+        const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${activeDeviceId}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) setError('Fehler beim Starten des Players.');
       }
     } catch {
       setError('Fehler bei der Playersteuerung.');
@@ -240,6 +250,7 @@ const buttonStyle: React.CSSProperties = {
   fontSize: '0.9rem',
 };
 
+// Dummy implementation – hier kannst du deine echte Refresh-Logik einfügen
 async function refreshAccessToken() {
-  return null; // Ersetze durch deine tatsächliche Refresh-Logik
+  return null;
 }
