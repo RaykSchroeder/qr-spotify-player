@@ -78,7 +78,7 @@ export default function Player() {
     };
 
     fetchDevices();
-    const interval = setInterval(fetchDevices, 5000);
+    const interval = setInterval(fetchDevices, 3000);
     return () => clearInterval(interval);
   }, [token]);
 
@@ -219,7 +219,7 @@ export default function Player() {
           <button onClick={() => controlPlayer('seek_backward')} style={buttonStyle}><FontAwesomeIcon icon="backward" /> 10s zurück</button>
           <button onClick={() => controlPlayer('seek_forward')} style={buttonStyle}><FontAwesomeIcon icon="forward" /> 10s vor</button>
           <button onClick={() => setCurrentUri(null)} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}>
-            Stop & Neuer Scan
+            Neuen Song Scan
           </button>
         </div>
       )}
