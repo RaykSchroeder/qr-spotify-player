@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import RulesModal from '@/components/RulesModal';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -23,7 +23,6 @@ export default function Player() {
   const [userName, setUserName] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
-  const keepAliveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
@@ -82,6 +81,16 @@ export default function Player() {
     return () => clearInterval(interval);
   }, [token]);
 
+  useEffect(() => {
+    if (!token || !activeDeviceId) return;
+
+    const interval = setInterval(() => {
+      sendKeepAlivePing();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [token, activeDeviceId]);
+
   const activateDevice = async (deviceId: string) => {
     if (!token) return;
     try {
@@ -117,17 +126,9 @@ export default function Player() {
       else {
         setCurrentUri(uri);
         setError('');
-        clearKeepAlive();
       }
     } catch {
       setError('Netzwerkfehler beim Abspielen.');
-    }
-  };
-
-  const clearKeepAlive = () => {
-    if (keepAliveIntervalRef.current) {
-      clearInterval(keepAliveIntervalRef.current);
-      keepAliveIntervalRef.current = null;
     }
   };
 
@@ -175,15 +176,6 @@ export default function Player() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) setError(`Fehler beim ${endpoint} des Players.`);
-
-        if (action === 'pause') {
-          clearKeepAlive();
-          keepAliveIntervalRef.current = setInterval(() => {
-            sendKeepAlivePing();
-          }, 4000);
-        } else {
-          clearKeepAlive();
-        }
       }
     } catch {
       setError('Fehler bei der Playersteuerung.');
