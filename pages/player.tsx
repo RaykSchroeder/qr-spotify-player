@@ -16,7 +16,15 @@ type Device = {
 };
 
 export default function Player() {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('access_token'));
+  const [token, setToken] = useState<string | null>(null);
+
+useEffect(() => {
+  const storedToken = localStorage.getItem('access_token');
+  if (storedToken) {
+    setToken(storedToken);
+  }
+}, []);
+
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [currentUri, setCurrentUri] = useState<string | null>(null);
