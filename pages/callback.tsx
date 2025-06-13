@@ -30,6 +30,7 @@ export default function Callback() {
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
         router.push('/player');
       } else {
         console.error('Token Request fehlgeschlagen', await res.text());
