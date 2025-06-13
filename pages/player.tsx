@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import RulesModal from '@/components/RulesModal';
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -24,9 +24,6 @@ export default function Player() {
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [storedVolume, setStoredVolume] = useState<number | null>(null);
-
-  const rewindIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
@@ -34,6 +31,19 @@ export default function Player() {
       setToken(storedToken);
     }
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(async () => {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        setToken(newToken);
+      } else {
+        setError('Token konnte nicht aktualisiert werden. Bitte neu einloggen.');
+      }
+    }, 1000 * 60 * 50);
+    return () => clearInterval(interval);
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -64,92 +74,9 @@ export default function Player() {
     };
 
     fetchDevices();
-    const interval = setInterval(fetchDevices, 5000);
+    const interval = setInterval(fetchDevices, 3000);
     return () => clearInterval(interval);
   }, [token]);
-
-  // Funktion um Lautstärke zu setzen
-  const setVolume = async (volumePercent: number) => {
-    if (!token || !activeDeviceId) return;
-    try {
-      await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${volumePercent}&device_id=${activeDeviceId}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      // Fehler ignorieren
-    }
-  };
-
-  // Funktion um aktuelle Lautstärke abzufragen
-  const fetchCurrentVolume = async (): Promise<number | null> => {
-    if (!token) return null;
-    try {
-      const res = await fetch('https://api.spotify.com/v1/me/player', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.device?.volume_percent ?? null;
-    } catch {
-      return null;
-    }
-  };
-
-  // Funktion zum zurückspulen um 1 Sekunde
-  const rewindOneSecond = async () => {
-    if (!token || !activeDeviceId) return;
-    try {
-      const res = await fetch('https://api.spotify.com/v1/me/player', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      const currentPos = data.progress_ms ?? 0;
-      const newPos = Math.max(currentPos - 1000, 0);
-      await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${newPos}&device_id=${activeDeviceId}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      // Fehler ignorieren
-    }
-  };
-
-  // Intervall starten / stoppen je nach isPaused Zustand
-  useEffect(() => {
-    if (isPaused) {
-      (async () => {
-        const currentVol = await fetchCurrentVolume();
-        if (currentVol !== null) {
-          setStoredVolume(currentVol);
-          await setVolume(0);
-        }
-      })();
-
-      if (rewindIntervalRef.current) clearInterval(rewindIntervalRef.current);
-      rewindIntervalRef.current = setInterval(() => {
-        rewindOneSecond();
-      }, 1000);
-    } else {
-      if (rewindIntervalRef.current) {
-        clearInterval(rewindIntervalRef.current);
-        rewindIntervalRef.current = null;
-      }
-      // Lautstärke zurücksetzen
-      if (storedVolume !== null) {
-        setVolume(storedVolume);
-        setStoredVolume(null);
-      }
-    }
-
-    return () => {
-      if (rewindIntervalRef.current) {
-        clearInterval(rewindIntervalRef.current);
-        rewindIntervalRef.current = null;
-      }
-    };
-  }, [isPaused]);
 
   const activateDevice = async (deviceId: string) => {
     if (!token) return;
@@ -157,7 +84,7 @@ export default function Player() {
       await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_ids: [deviceId], play: false }),
+        body: JSON.stringify({ device_ids: [deviceId], play: true }),
       });
     } catch {
       setError('Fehler beim Aktivieren des Geräts.');
@@ -185,7 +112,7 @@ export default function Player() {
       else {
         setCurrentUri(uri);
         setError('');
-        setIsPaused(false); // Stoppe Rewind wenn neuer Song gespielt wird
+        setIsPaused(false);
       }
     } catch {
       setError('Netzwerkfehler beim Abspielen.');
