@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import RulesModal from '@/components/RulesModal';
+import RulesSelector from '@/components/RulesSelector'; // je nach Pfad anpassen
+
+
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
   faPlay,
@@ -213,7 +216,7 @@ export default function Player() {
         <FontAwesomeIcon icon="book" /> Spielregeln anzeigen
       </button>
 
-      <RulesModal show={showRules} onClose={() => setShowRules(false)} />
+      <RulesSelector />
 
       {currentUri && (
         <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
