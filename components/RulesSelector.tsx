@@ -1,31 +1,25 @@
 import React, { useState } from 'react';
-import RulesModal from './RulesModal';
+import RulesModalV1 from './RulesModalV1';
+// import RulesModalV2 from './RulesModalV2'; // später hinzufügen
 
 const RulesSelector: React.FC = () => {
-  const [showModal, setShowModal] = useState(false);
+  const [version, setVersion] = useState<'v1' /* | 'v2' */>('v1');
+  const [show, setShow] = useState(false);
 
   return (
-    <div style={{ textAlign: 'center', margin: '2rem 0' }}>
-      <button
-        onClick={() => setShowModal(true)}
-        style={{
-          padding: '0.5rem 1rem',
-          fontSize: '1rem',
-          backgroundColor: '#0070f3',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '5px',
-          cursor: 'pointer',
-        }}
-      >
-        📖 Spielregeln anzeigen
+    <div style={{ marginTop: '2rem' }}>
+      <label style={{ marginRight: '1rem' }}>Version wählen:</label>
+      <select value={version} onChange={(e) => setVersion(e.target.value as 'v1' /* | 'v2' */)}>
+        <option value="v1">Spielregeln Version 1</option>
+        {/* <option value="v2">Spielregeln Version 2</option> */}
+      </select>
+
+      <button onClick={() => setShow(true)} style={{ marginLeft: '1rem' }}>
+        Anzeigen
       </button>
 
-      <RulesModal
-        show={showModal}
-        onClose={() => setShowModal(false)}
-        version="1.0"
-      />
+      {version === 'v1' && <RulesModalV1 show={show} onClose={() => setShow(false)} />}
+      {/* {version === 'v2' && <RulesModalV2 show={show} onClose={() => setShow(false)} />} */}
     </div>
   );
 };
