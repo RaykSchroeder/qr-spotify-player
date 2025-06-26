@@ -3,10 +3,11 @@ import React from 'react';
 type Props = {
   show: boolean;
   onClose: () => void;
+  version: 1 | 2;
 };
 
-const RulesModal: React.FC<Props> = ({ show, onClose }) => {
-  if (!show) return null; // Nur anzeigen, wenn show true ist
+const RulesModal: React.FC<Props> = ({ show, onClose, version }) => {
+  if (!show) return null;
 
   return (
     <div style={{
@@ -36,7 +37,7 @@ const RulesModal: React.FC<Props> = ({ show, onClose }) => {
         lineHeight: '1.5'
       }}>
         <h2 style={{ marginTop: 0, color: '#1DB954' }}>
-          🎵 SPIELANLEITUNG – Musik-Zeitreise
+          🎵 SPIELANLEITUNG – Musik-Zeitreise (Version {version})
         </h2>
 
         <h3>📲 Vor dem Spiel</h3>
@@ -73,13 +74,29 @@ const RulesModal: React.FC<Props> = ({ show, onClose }) => {
         <ul>
           <li>Nennt das aktive Team korrekt den Interpreten und den Songtitel, ist die Karte gesichert – sie kann nicht geklaut werden.</li>
           <li>Achtung: Die Karte muss trotzdem richtig einsortiert sein! Nur dann bleibt sie im Spiel.</li>
-          <li>Kennt nur das gegnerische Team Interpret & Titel, darf es eine risikofreie Korrektur-Vermutung äußern:
-            <ul>
-              <li>Wenn korrekt: → Die Karte wird geklaut und einsortiert.</li>
-              <li>Wenn falsch: → Es passiert nichts, das Spiel läuft wie geplant weiter.</li>
-            </ul>
-          </li>
-          <li><em>💡 Tipp: Karten klauen ohne Risiko lohnt sich fast immer!</em></li>
+          {version === 1 && (
+            <>
+              <li>Kennt nur das gegnerische Team Interpret & Titel, darf es eine risikofreie Korrektur-Vermutung äußern:
+                <ul>
+                  <li>Wenn korrekt: → Die Karte wird geklaut und einsortiert.</li>
+                  <li>Wenn falsch: → Es passiert nichts, das Spiel läuft wie geplant weiter.</li>
+                </ul>
+              </li>
+              <li><em>💡 Tipp: Karten klauen ohne Risiko lohnt sich fast immer!</em></li>
+            </>
+          )}
+          {version === 2 && (
+            <>
+              <li>Als Belohnung bekommt das aktive Team bei korrekter Nennung von Interpret & Titel eine weitere Karte, die es erraten kann.</li>
+              <li>Kennt nur das gegnerische Team Interpret & Titel, darf es eine risikofreie Korrektur-Vermutung äußern:
+                <ul>
+                  <li>Wenn korrekt: → Die Karte wird geklaut und einsortiert.</li>
+                  <li>Wenn falsch: → Es passiert nichts, das Spiel läuft wie geplant weiter.</li>
+                </ul>
+              </li>
+              <li><em>💡 Tipp: Karten klauen ohne Risiko lohnt sich fast immer!</em></li>
+            </>
+          )}
         </ul>
 
         <h3>🏁 Spielende</h3>
