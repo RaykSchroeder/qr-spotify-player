@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import RulesModal from '@/components/RulesModal';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPlay, faPause, faBackward, faForward, faQrcode, faBook } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPause, faBackward, faForward, faQrcode, faBook, faVolumeUp, faVolumeDown } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-library.add(...[faPlay, faPause, faBackward, faForward, faQrcode, faBook]);
+library.add(...[faPlay, faPause, faBackward, faForward, faQrcode, faBook, faVolumeUp, faVolumeDown]);
 
 type Device = {
   id: string;
@@ -24,6 +24,7 @@ export default function Player() {
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [volume, setVolumeLevel] = useState(50); // Initial volume
 
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
@@ -152,6 +153,23 @@ export default function Player() {
     }
   };
 
+  const setVolume = async (newVolume: number) => {
+    if (!token || !activeDeviceId || newVolume < 0 || newVolume > 100) return;
+    try {
+      const res = await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${newVolume}&device_id=${activeDeviceId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setVolumeLevel(newVolume);
+      } else {
+        setError('Fehler beim Setzen der Lautstärke.');
+      }
+    } catch {
+      setError('Netzwerkfehler beim Ändern der Lautstärke.');
+    }
+  };
+
   return (
     <div style={{ maxWidth: 420, margin: '2rem auto', fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: '0 1rem' }}>
       <h1 style={{ color: '#1DB954', marginBottom: '0.5rem' }}>Spotify Player</h1>
@@ -182,6 +200,8 @@ export default function Player() {
           <button onClick={() => { setCurrentUri(null); setIsPaused(false); }} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}>
             Neuen Song scannen
           </button>
+          <button onClick={() => setVolume(volume - 10)} style={buttonStyle}><FontAwesomeIcon icon="volume-down" /> Leiser</button>
+          <button onClick={() => setVolume(volume + 10)} style={buttonStyle}><FontAwesomeIcon icon="volume-up" /> Lauter</button>
         </div>
       )}
 
