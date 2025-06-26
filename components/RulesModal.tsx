@@ -113,10 +113,8 @@ const RulesModal: React.FC<Props> = ({ show, onClose }) => {
       <li>Wenn die Vermutung falsch ist: → Das aktive Team darf als Belohnung sofort eine weitere Karte ziehen und das nächste Lied erraten.</li>
     </ul>
 
-    <h3>🛡️ Karte safen</h3>
+    <h3>🛡️ Karte klauen mit schutz</h3>
     <ul>
-      <li>Nennt das aktive Team korrekt den Interpreten und den Songtitel, ist die Karte gesichert – sie kann nicht geklaut werden.</li>
-      <li>Achtung: Die Karte muss trotzdem richtig einsortiert sein! Nur dann bleibt sie im Spiel.</li>
       <li>Kennt nur das gegnerische Team Interpret & Titel, darf es eine risikofreie Korrektur-Vermutung äußern:
         <ul>
           <li>Wenn korrekt: → Die Karte wird geklaut und einsortiert.</li>
