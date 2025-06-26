@@ -2,10 +2,19 @@ import { useEffect, useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import RulesModal from '@/components/RulesModal';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPlay, faPause, faBackward, faForward, faQrcode, faBook, faVolumeUp, faVolumeDown } from '@fortawesome/free-solid-svg-icons';
+import {
+  faPlay,
+  faPause,
+  faBackward,
+  faForward,
+  faQrcode,
+  faBook,
+  faVolumeUp,
+  faVolumeDown,
+} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-library.add(...[faPlay, faPause, faBackward, faForward, faQrcode, faBook, faVolumeUp, faVolumeDown]);
+library.add(faPlay, faPause, faBackward, faForward, faQrcode, faBook, faVolumeUp, faVolumeDown);
 
 type Device = {
   id: string;
@@ -24,7 +33,7 @@ export default function Player() {
   const [error, setError] = useState('');
   const [showRules, setShowRules] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [volume, setVolumeLevel] = useState(50); // Initial volume
+  const [volume, setVolumeState] = useState<number>(50);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token');
@@ -154,19 +163,16 @@ export default function Player() {
   };
 
   const setVolume = async (newVolume: number) => {
-    if (!token || !activeDeviceId || newVolume < 0 || newVolume > 100) return;
+    const clamped = Math.max(0, Math.min(100, newVolume));
+    if (!token || !activeDeviceId) return;
     try {
-      const res = await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${newVolume}&device_id=${activeDeviceId}`, {
+      await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${clamped}&device_id=${activeDeviceId}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        setVolumeLevel(newVolume);
-      } else {
-        setError('Fehler beim Setzen der Lautstärke.');
-      }
+      setVolumeState(clamped);
     } catch {
-      setError('Netzwerkfehler beim Ändern der Lautstärke.');
+      setError('Lautstärke konnte nicht geändert werden.');
     }
   };
 
@@ -200,8 +206,6 @@ export default function Player() {
           <button onClick={() => { setCurrentUri(null); setIsPaused(false); }} style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333' }}>
             Neuen Song scannen
           </button>
-          <button onClick={() => setVolume(volume - 10)} style={buttonStyle}><FontAwesomeIcon icon="volume-down" /> Leiser</button>
-          <button onClick={() => setVolume(volume + 10)} style={buttonStyle}><FontAwesomeIcon icon="volume-up" /> Lauter</button>
         </div>
       )}
 
@@ -210,6 +214,17 @@ export default function Player() {
       </button>
 
       <RulesModal show={showRules} onClose={() => setShowRules(false)} />
+
+      {currentUri && (
+        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button onClick={() => setVolume(volume - 10)} style={buttonStyle}>
+            <FontAwesomeIcon icon="volume-down" /> Leiser
+          </button>
+          <button onClick={() => setVolume(volume + 10)} style={buttonStyle}>
+            <FontAwesomeIcon icon="volume-up" /> Lauter
+          </button>
+        </div>
+      )}
     </div>
   );
 }
