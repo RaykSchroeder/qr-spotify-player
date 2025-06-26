@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import RulesModal from '.components/RulesModal';
+import RulesModal from './components/RulesModal';
 
 const RulesSelector = () => {
   const [showModal, setShowModal] = useState(false);
